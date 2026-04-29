@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { API_URL } from "@/lib/api"
@@ -17,6 +17,12 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const router = useRouter()
+
+  useEffect(() => {
+    if (localStorage.getItem("pilotphd_token")) {
+      router.replace("/dashboard")
+    }
+  }, [router])
 
   function setField(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>

@@ -77,7 +77,7 @@ function ResetPasswordContent() {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Password updated!</h1>
-                <p className="text-sm text-gray-400 mt-1">Redirecting you to sign in…</p>
+                <p className="text-sm text-gray-400 mt-1">Redirecting you to your dashboard…</p>
               </div>
             </div>
           ) : (
