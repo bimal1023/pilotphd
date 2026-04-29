@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from .config import settings
 
@@ -21,3 +21,13 @@ def get_db():
 def init_db():
     from .models import application, user  # noqa: F401 — ensures models are registered
     Base.metadata.create_all(bind=engine)
+    _run_migrations()
+
+
+def _run_migrations():
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE applications ADD COLUMN IF NOT EXISTS "
+            "user_id INTEGER REFERENCES users(id) ON DELETE CASCADE"
+        ))
+        conn.commit()
