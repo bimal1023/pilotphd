@@ -27,6 +27,17 @@ VERIFICATION_TOKEN_TTL_HOURS = 24
 RESET_TOKEN_TTL_HOURS = 1
 
 
+def set_session_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key="session",
+        value=token,
+        httponly=True,
+        secure=settings.is_production,
+        samesite="none" if settings.is_production else "lax",
+        max_age=60 * 60 * 24 * 7,
+    )
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
@@ -64,14 +75,7 @@ def verify_email(payload: VerifyEmailRequest, response: Response, db: Session = 
 
     # Auto sign-in after verification
     token = create_access_token(user.id)
-    response.set_cookie(
-        key="session",
-        value=token,
-        httponly=True,
-        secure=settings.is_production,
-        samesite="lax",
-        max_age=60 * 60 * 24 * 7,
-    )
+    set_session_cookie(response, token)
     return {"message": "Email verified successfully.", "user": {"name": user.name, "email": user.email}}
 
 
@@ -84,14 +88,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         raise HTTPException(status_code=403, detail="Please verify your email before signing in.")
 
     token = create_access_token(user.id)
-    response.set_cookie(
-        key="session",
-        value=token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=60 * 60 * 24 * 7,
-    )
+    set_session_cookie(response, token)
     return {"user": {"name": user.name, "email": user.email}}
 
 
