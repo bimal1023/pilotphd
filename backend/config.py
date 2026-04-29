@@ -1,0 +1,37 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
+from pathlib import Path
+
+ENV_FILE = Path(__file__).parent / ".env"
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    database_url: str
+    anthropic_api_key: str
+    brave_api_key: str = ""
+    frontend_url: str = "http://localhost:3000"
+    secret_key: str
+    resend_api_key: str
+    from_email: str = "onboarding@resend.dev"
+    environment: str = "development"
+
+    claude_model: str = "claude-sonnet-4-20250514"
+    embedding_model: str = "text-embedding-3-small"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()
