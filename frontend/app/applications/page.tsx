@@ -44,7 +44,8 @@ export default function Applications() {
     try {
       const res = await fetchWithTimeout(`${API_URL}/api/applications/`)
       const data = await res.json()
-      setApplications(data)
+      if (!res.ok) throw new Error(data.detail || "Could not load applications.")
+      setApplications(Array.isArray(data) ? data : [])
     } catch {
       setError("Could not load applications. Please refresh the page.")
     } finally {
