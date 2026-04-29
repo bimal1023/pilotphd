@@ -19,6 +19,12 @@ export async function fetchWithTimeout(
       headers,
     })
     clearTimeout(timeout)
+    if (res.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("pilotphd_token")
+      localStorage.removeItem("pilotphd_user")
+      window.dispatchEvent(new StorageEvent("storage", { key: "pilotphd_user", newValue: null }))
+      window.location.href = "/login"
+    }
     return res
   } catch (err) {
     clearTimeout(timeout)

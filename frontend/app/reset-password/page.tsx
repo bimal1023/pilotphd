@@ -39,8 +39,12 @@ function ResetPasswordContent() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || "Reset failed.")
+      // Auto sign-in with the new token
+      localStorage.setItem("pilotphd_token", data.token)
+      localStorage.setItem("pilotphd_user", JSON.stringify(data.user))
+      window.dispatchEvent(new StorageEvent("storage", { key: "pilotphd_user", newValue: JSON.stringify(data.user) }))
       setSuccess(true)
-      setTimeout(() => router.push("/login"), 2500)
+      setTimeout(() => router.push("/dashboard"), 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
     } finally {

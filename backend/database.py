@@ -30,4 +30,7 @@ def _run_migrations():
             "ALTER TABLE applications ADD COLUMN IF NOT EXISTS "
             "user_id INTEGER REFERENCES users(id) ON DELETE CASCADE"
         ))
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"
+        ))
         conn.commit()

@@ -74,7 +74,7 @@ def verify_email(payload: VerifyEmailRequest, response: Response, db: Session = 
     db.commit()
 
     # Auto sign-in after verification
-    token = create_access_token(user.id)
+    token = create_access_token(user.id, user.token_version or 0)
     set_session_cookie(response, token)
     return {"message": "Email verified successfully.", "token": token, "user": {"name": user.name, "email": user.email}}
 
@@ -87,7 +87,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     if not user.is_verified:
         raise HTTPException(status_code=403, detail="Please verify your email before signing in.")
 
-    token = create_access_token(user.id)
+    token = create_access_token(user.id, user.token_version or 0)
     set_session_cookie(response, token)
     return {"token": token, "user": {"name": user.name, "email": user.email}}
 
@@ -120,7 +120,7 @@ async def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(
 
 
 @router.post("/reset-password")
-def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+def reset_password(payload: ResetPasswordRequest, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.reset_token == payload.token).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
@@ -130,8 +130,13 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
     user.hashed_password = hash_password(payload.password)
     user.reset_token = None
     user.reset_token_expires_at = None
+    user.token_version = (user.token_version or 0) + 1  # invalidate all old sessions
     db.commit()
-    return {"message": "Password updated successfully. You can now sign in."}
+
+    # Auto sign-in so the user doesn't lose their session
+    token = create_access_token(user.id, user.token_version)
+    set_session_cookie(response, token)
+    return {"message": "Password updated successfully.", "token": token, "user": {"name": user.name, "email": user.email}}
 
 
 @router.post("/resend-verification")

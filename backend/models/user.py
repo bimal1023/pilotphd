@@ -14,6 +14,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(200))
 
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    token_version: Mapped[int] = mapped_column(default=0)
     verification_token: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     verification_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
