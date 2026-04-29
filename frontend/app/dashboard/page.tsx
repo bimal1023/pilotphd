@@ -1,29 +1,19 @@
+"use client"
+
 import { API_URL } from "@/lib/api"
 import Link from "next/link"
-import { cookies } from "next/headers"
+import { useState, useEffect } from "react"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
-async function getApplications() {
-  try {
-    const cookieStore = await cookies()
-    const session = cookieStore.get("session")?.value
-    const res = await fetch(`${API_URL}/api/applications`, {
-      cache: "no-store",
-      headers: { Cookie: `session=${session}` },
-    })
-    if (!res.ok) return []
-    return res.json()
-  } catch {
-    return []
-  }
-}
+type Application = { id: number; university: string; program: string; status: string }
 
 const statusConfig: Record<string, { color: string; dot: string }> = {
-  planning:  { color: "bg-gray-100 text-gray-600",   dot: "bg-gray-400" },
-  applied:   { color: "bg-blue-50 text-blue-600",    dot: "bg-blue-500" },
-  waiting:   { color: "bg-amber-50 text-amber-600",  dot: "bg-amber-400" },
-  accepted:  { color: "bg-green-50 text-green-600",  dot: "bg-green-500" },
-  rejected:  { color: "bg-red-50 text-red-500",      dot: "bg-red-400" },
-  withdrawn: { color: "bg-orange-50 text-orange-500",dot: "bg-orange-400" },
+  planning:  { color: "bg-gray-100 text-gray-600",    dot: "bg-gray-400" },
+  applied:   { color: "bg-blue-50 text-blue-600",     dot: "bg-blue-500" },
+  waiting:   { color: "bg-amber-50 text-amber-600",   dot: "bg-amber-400" },
+  accepted:  { color: "bg-green-50 text-green-600",   dot: "bg-green-500" },
+  rejected:  { color: "bg-red-50 text-red-500",       dot: "bg-red-400" },
+  withdrawn: { color: "bg-orange-50 text-orange-500", dot: "bg-orange-400" },
 }
 
 const quickActions = [
@@ -72,27 +62,47 @@ const quickActions = [
   },
 ]
 
-export default async function Dashboard() {
-  const applications = await getApplications()
+export default function Dashboard() {
+  const [applications, setApplications] = useState<Application[]>([])
+  const [userName, setUserName] = useState("")
 
-  const total = applications.length
-  const submitted = applications.filter((a: { status: string }) => a.status === "applied").length
-  const waiting = applications.filter((a: { status: string }) => a.status === "waiting").length
-  const accepted = applications.filter((a: { status: string }) => a.status === "accepted").length
+  useEffect(() => {
+    async function load() {
+      const stored = localStorage.getItem("pilotphd_user")
+      if (stored) {
+        try { setUserName(JSON.parse(stored).name?.split(" ")[0] ?? "") } catch {}
+      }
+      try {
+        const res = await fetchWithTimeout(`${API_URL}/api/applications/`)
+        const data = await res.json()
+        if (Array.isArray(data)) setApplications(data)
+      } catch {}
+    }
+    load()
+  }, [])
+
+  const total     = applications.length
+  const submitted = applications.filter((a) => a.status === "applied").length
+  const waiting   = applications.filter((a) => a.status === "waiting").length
+  const accepted  = applications.filter((a) => a.status === "accepted").length
 
   const stats = [
-    { label: "Total", value: total, sub: "applications" },
-    { label: "Submitted", value: submitted, sub: "sent" },
-    { label: "Waiting", value: waiting, sub: "in review" },
-    { label: "Accepted", value: accepted, sub: "offers" },
+    { label: "Total",     value: total,     sub: "applications" },
+    { label: "Submitted", value: submitted,  sub: "sent" },
+    { label: "Waiting",   value: waiting,    sub: "in review" },
+    { label: "Accepted",  value: accepted,   sub: "offers" },
   ]
 
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
 
   return (
     <div className="space-y-10">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Good morning</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {greeting}{userName ? `, ${userName}` : ""}
+        </h1>
         <p className="text-sm text-gray-400">{today} · Here&apos;s your PhD application overview</p>
       </div>
 
@@ -119,7 +129,7 @@ export default async function Dashboard() {
             </Link>
           </div>
           <div className="space-y-2">
-            {applications.slice(0, 3).map((app: { id: number; university: string; program: string; status: string }) => (
+            {applications.slice(0, 3).map((app) => (
               <div key={app.id} className="bg-white rounded-xl border border-gray-100 px-5 py-4 flex items-center justify-between hover:border-gray-200 transition-all">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${statusConfig[app.status]?.dot ?? "bg-gray-300"}`} />

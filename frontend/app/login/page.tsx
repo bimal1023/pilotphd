@@ -50,6 +50,7 @@ export default function LoginPage() {
         if (!res.ok) throw new Error(data.detail || "Sign in failed.")
         localStorage.setItem("pilotphd_token", data.token)
         localStorage.setItem("pilotphd_user", JSON.stringify(data.user))
+        window.dispatchEvent(new StorageEvent("storage", { key: "pilotphd_user", newValue: JSON.stringify(data.user) }))
         router.push("/dashboard")
       }
     } catch (err) {
