@@ -33,7 +33,7 @@ def set_session_cookie(response: Response, token: str) -> None:
         value=token,
         httponly=True,
         secure=settings.is_production,
-        samesite="none" if settings.is_production else "lax",
+        samesite="lax",
         max_age=60 * 60 * 24 * 7,
     )
 
@@ -76,7 +76,7 @@ def verify_email(payload: VerifyEmailRequest, response: Response, db: Session = 
     # Auto sign-in after verification
     token = create_access_token(user.id)
     set_session_cookie(response, token)
-    return {"message": "Email verified successfully.", "user": {"name": user.name, "email": user.email}}
+    return {"message": "Email verified successfully.", "token": token, "user": {"name": user.name, "email": user.email}}
 
 
 @router.post("/login")
@@ -89,7 +89,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 
     token = create_access_token(user.id)
     set_session_cookie(response, token)
-    return {"user": {"name": user.name, "email": user.email}}
+    return {"token": token, "user": {"name": user.name, "email": user.email}}
 
 
 @router.post("/logout")

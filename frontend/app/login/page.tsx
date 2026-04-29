@@ -48,7 +48,7 @@ export default function LoginPage() {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.detail || "Sign in failed.")
-        // Store display info (not the token — that's in the HttpOnly cookie)
+        localStorage.setItem("pilotphd_token", data.token)
         localStorage.setItem("pilotphd_user", JSON.stringify(data.user))
         router.push("/dashboard")
       }

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from jose import JWTError, jwt
 import bcrypt as _bcrypt
 from sqlalchemy.orm import Session
@@ -31,12 +31,19 @@ def decode_access_token(token: str) -> int:
 
 def get_current_user(
     session: str | None = Cookie(default=None),
+    authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ) -> User:
-    if not session:
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ")
+    elif session:
+        token = session
+
+    if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
-        user_id = decode_access_token(session)
+        user_id = decode_access_token(token)
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
     user = db.query(User).filter(User.id == user_id).first()

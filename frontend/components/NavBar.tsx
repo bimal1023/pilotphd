@@ -116,6 +116,7 @@ export default function NavBar() {
       method: "POST",
       credentials: "include",
     }).catch(() => {})
+    localStorage.removeItem("pilotphd_token")
     localStorage.removeItem("pilotphd_user")
     setUser(null)
     router.push("/")

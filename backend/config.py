@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     brave_api_key: str = ""
     # Comma-separated list of allowed origins, e.g. "https://pilotphd.vercel.app,https://www.pilotphd.com"
-    allowed_origins: str = "http://localhost:3000"
+    frontend_url: str = "http://localhost:3000"
     secret_key: str
     resend_api_key: str
     from_email: str = "onboarding@resend.dev"
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        return [o.strip() for o in self.frontend_url.split(",") if o.strip()]
 
 
 @lru_cache

@@ -30,6 +30,7 @@ function VerifyEmailContent() {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.detail || "Verification failed.")
+        localStorage.setItem("pilotphd_token", data.token)
         localStorage.setItem("pilotphd_user", JSON.stringify(data.user))
         setStatus("success")
         setTimeout(() => router.push("/dashboard"), 2000)
