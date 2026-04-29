@@ -1,23 +1,30 @@
 import httpx
+import logging
 from ..config import settings
+
+logger = logging.getLogger(__name__)
 
 
 async def send_email(to: str, subject: str, html: str) -> None:
-    async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-        response = await client.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {settings.resend_api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "from": f"PilotPhD <{settings.from_email}>",
-                "to": [to],
-                "subject": subject,
-                "html": html,
-            },
-        )
-        response.raise_for_status()
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": f"PilotPhD <{settings.from_email}>",
+                    "to": [to],
+                    "subject": subject,
+                    "html": html,
+                },
+            )
+            if not response.is_success:
+                logger.error("Resend API error %s: %s", response.status_code, response.text)
+    except Exception as e:
+        logger.error("Failed to send email to %s: %s", to, e)
 
 
 def _email_wrapper(title: str, body: str) -> str:

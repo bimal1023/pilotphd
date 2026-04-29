@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { API_URL } from "@/lib/api"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
 const inputClass =
   "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -18,7 +19,7 @@ export default function ForgotPasswordPage() {
     setError("")
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      const res = await fetchWithTimeout(`${API_URL}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
