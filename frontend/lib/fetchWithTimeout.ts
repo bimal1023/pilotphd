@@ -7,17 +7,16 @@ export async function fetchWithTimeout(
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
   const token = typeof window !== "undefined" ? localStorage.getItem("pilotphd_token") : null
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {}
+
+  const headers = new Headers(options.headers as HeadersInit | undefined)
+  if (token) headers.set("Authorization", `Bearer ${token}`)
 
   try {
     const res = await fetch(url, {
       ...options,
       signal: controller.signal,
       credentials: "include",
-      headers: {
-        ...authHeader,
-        ...(options.headers ?? {}),
-      },
+      headers,
     })
     clearTimeout(timeout)
     return res
