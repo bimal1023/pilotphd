@@ -166,6 +166,7 @@ export default function Dashboard() {
             <Link
               key={action.href}
               href={action.href}
+              prefetch={false}
               className="group bg-white rounded-xl border border-gray-100 p-5 hover:border-blue-200 hover:shadow-sm transition-all"
             >
               <div className="flex items-start gap-3">
