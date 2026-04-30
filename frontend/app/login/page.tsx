@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { API_URL } from "@/lib/api"
+import { setAuthCookie, hasAuthCookie } from "@/lib/authCookie"
 
 const inputClass =
   "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -13,14 +14,20 @@ type Tab = "signin" | "signup"
 export default function LoginPage() {
   const [tab, setTab] = useState<Tab>("signin")
   const [form, setForm] = useState({ name: "", email: "", password: "" })
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const router = useRouter()
 
   useEffect(() => {
-    if (localStorage.getItem("pilotphd_token")) {
+    const token = localStorage.getItem("pilotphd_token")
+    if (token && hasAuthCookie()) {
       router.replace("/dashboard")
+    } else if (token && !hasAuthCookie()) {
+      // Token in localStorage but no session cookie — expired or signed out elsewhere; clear it
+      localStorage.removeItem("pilotphd_token")
+      localStorage.removeItem("pilotphd_user")
     }
   }, [router])
 
@@ -56,6 +63,7 @@ export default function LoginPage() {
         if (!res.ok) throw new Error(data.detail || "Sign in failed.")
         localStorage.setItem("pilotphd_token", data.token)
         localStorage.setItem("pilotphd_user", JSON.stringify(data.user))
+        setAuthCookie()
         window.dispatchEvent(new StorageEvent("storage", { key: "pilotphd_user", newValue: JSON.stringify(data.user) }))
         router.push("/dashboard")
       }
@@ -139,7 +147,33 @@ export default function LoginPage() {
                     </Link>
                   )}
                 </div>
-                <input type="password" placeholder="••••••••" value={form.password} onChange={setField("password")} className={inputClass} required minLength={8} />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={setField("password")}
+                    className={inputClass}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {error && (
@@ -178,9 +212,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <p className="text-center text-xs text-gray-300 mt-8">
-            By continuing, you agree to our Terms and Privacy Policy.
-          </p>
         </div>
       </div>
     </div>

@@ -7,11 +7,11 @@ from ..models.application import Application, ApplicationStatus
 client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
 
-async def generate_daily_briefing(db: Session) -> str:
+async def generate_daily_briefing(db: Session, user_id: int) -> str:
     today = date.today()
     two_weeks = today + timedelta(days=14)
 
-    all_apps = db.query(Application).all()
+    all_apps = db.query(Application).filter(Application.user_id == user_id).all()
 
     upcoming_deadlines = [
         app for app in all_apps

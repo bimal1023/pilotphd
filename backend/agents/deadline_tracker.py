@@ -7,10 +7,11 @@ from ..models.application import Application, ApplicationStatus
 client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
 
-async def get_deadline_briefing(db: Session) -> str:
+async def get_deadline_briefing(db: Session, user_id: int) -> str:
     today = date.today()
 
     applications = db.query(Application).filter(
+        Application.user_id == user_id,
         Application.status.in_([
             ApplicationStatus.PLANNING,
             ApplicationStatus.APPLIED,

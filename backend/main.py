@@ -1,9 +1,13 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
+from sqlalchemy import text
 from .config import settings
-from .database import init_db
+from .database import init_db, get_db
+from .limiter import limiter
 from .routes import applications, agents, auth
 
 
@@ -24,6 +28,15 @@ app = FastAPI(
     openapi_url=None if settings.is_production else "/openapi.json",
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    lambda request, exc: JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Please wait a moment and try again."},
+    ),
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -39,5 +52,6 @@ app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 
 
 @app.get("/health")
-def health():
+def health(db=Depends(get_db)):
+    db.execute(text("SELECT 1"))
     return {"status": "ok"}

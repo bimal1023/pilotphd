@@ -4,6 +4,7 @@ import { useState, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { API_URL } from "@/lib/api"
+import { setAuthCookie } from "@/lib/authCookie"
 
 const inputClass =
   "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -15,6 +16,8 @@ function ResetPasswordContent() {
 
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
@@ -42,6 +45,7 @@ function ResetPasswordContent() {
       // Auto sign-in with the new token
       localStorage.setItem("pilotphd_token", data.token)
       localStorage.setItem("pilotphd_user", JSON.stringify(data.user))
+      setAuthCookie()
       window.dispatchEvent(new StorageEvent("storage", { key: "pilotphd_user", newValue: JSON.stringify(data.user) }))
       setSuccess(true)
       setTimeout(() => router.push("/dashboard"), 2000)
@@ -91,28 +95,46 @@ function ResetPasswordContent() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">New Password</label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={inputClass}
-                    autoFocus
-                    required
-                    minLength={8}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={inputClass}
+                      autoFocus
+                      required
+                      minLength={8}
+                    />
+                    <button type="button" onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                      {showPassword
+                        ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Confirm Password</label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    className={inputClass}
-                    required
-                    minLength={8}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirm ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      className={inputClass}
+                      required
+                      minLength={8}
+                    />
+                    <button type="button" onClick={() => setShowConfirm((v) => !v)}
+                      aria-label={showConfirm ? "Hide password" : "Show password"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                      {showConfirm
+                        ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                    </button>
+                  </div>
                 </div>
 
                 {error && (
@@ -143,9 +165,15 @@ function ResetPasswordContent() {
   )
 }
 
+const Spinner = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-[#fafafa]">
+    <div className="w-8 h-8 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+  </div>
+)
+
 export default function ResetPasswordPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<Spinner />}>
       <ResetPasswordContent />
     </Suspense>
   )

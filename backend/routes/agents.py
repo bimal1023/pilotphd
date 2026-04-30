@@ -64,7 +64,7 @@ async def deadline_briefing_route(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        result = await get_deadline_briefing(db)
+        result = await get_deadline_briefing(db, current_user.id)
         return {"result": result}
     except Exception as e:
         logger.error(f"deadline_briefing failed: {e}")
@@ -77,7 +77,7 @@ async def daily_briefing_route(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        result = await generate_daily_briefing(db)
+        result = await generate_daily_briefing(db, current_user.id)
         return {"result": result}
     except Exception as e:
         logger.error(f"daily_briefing failed: {e}")

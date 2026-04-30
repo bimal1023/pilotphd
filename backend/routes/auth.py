@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from ..auth import (
@@ -10,6 +10,7 @@ from ..auth import (
 )
 from ..config import settings
 from ..database import get_db
+from ..limiter import limiter
 from ..models.user import User
 from ..schemas import (
     ForgotPasswordRequest,
@@ -39,7 +40,8 @@ def set_session_cookie(response: Response, token: str) -> None:
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="An account with this email already exists.")
 
@@ -56,7 +58,10 @@ async def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
 
-    await send_verification_email(user.email, user.name, token)
+    try:
+        await send_verification_email(user.email, user.name, token)
+    except RuntimeError:
+        raise HTTPException(status_code=500, detail="Account created but we could not send the verification email. Please use 'Resend verification email' to try again.")
     return {"message": "Account created. Please check your email to verify your account."}
 
 
@@ -80,7 +85,8 @@ def verify_email(payload: VerifyEmailRequest, response: Response, db: Session = 
 
 
 @router.post("/login")
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password.")
@@ -104,7 +110,8 @@ def me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/forgot-password")
-async def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     # Always return the same message to avoid email enumeration
     if not user:
@@ -115,7 +122,10 @@ async def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(
     user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=RESET_TOKEN_TTL_HOURS)
     db.commit()
 
-    await send_password_reset_email(user.email, user.name, token)
+    try:
+        await send_password_reset_email(user.email, user.name, token)
+    except RuntimeError:
+        raise HTTPException(status_code=500, detail="Could not send reset email. Check that FROM_EMAIL is configured correctly in Render.")
     return {"message": "If that email is registered, you'll receive a reset link shortly."}
 
 
@@ -140,7 +150,8 @@ def reset_password(payload: ResetPasswordRequest, response: Response, db: Sessio
 
 
 @router.post("/resend-verification")
-async def resend_verification(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+async def resend_verification(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or user.is_verified:
         return {"message": "If that email is registered and unverified, we'll send a new link."}
@@ -150,5 +161,8 @@ async def resend_verification(payload: ForgotPasswordRequest, db: Session = Depe
     user.verification_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=VERIFICATION_TOKEN_TTL_HOURS)
     db.commit()
 
-    await send_verification_email(user.email, user.name, token)
+    try:
+        await send_verification_email(user.email, user.name, token)
+    except RuntimeError:
+        raise HTTPException(status_code=500, detail="Could not send verification email. Check that FROM_EMAIL is configured correctly in Render.")
     return {"message": "If that email is registered and unverified, we'll send a new link."}

@@ -22,9 +22,14 @@ async def send_email(to: str, subject: str, html: str) -> None:
                 },
             )
             if not response.is_success:
-                logger.error("Resend API error %s: %s", response.status_code, response.text)
+                logger.error("Resend API error %s — from=%s to=%s — %s",
+                             response.status_code, settings.from_email, to, response.text)
+                raise RuntimeError(f"Email delivery failed ({response.status_code})")
+    except RuntimeError:
+        raise
     except Exception as e:
         logger.error("Failed to send email to %s: %s", to, e)
+        raise RuntimeError("Email delivery failed — check Render logs")
 
 
 def _email_wrapper(title: str, body: str) -> str:

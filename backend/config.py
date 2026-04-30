@@ -23,7 +23,6 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     claude_model: str = "claude-sonnet-4-20250514"
-    embedding_model: str = "text-embedding-3-small"
 
     @property
     def is_production(self) -> bool:

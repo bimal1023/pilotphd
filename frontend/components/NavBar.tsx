@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { clearAuthCookie } from "@/lib/authCookie"
 
 const navLinks = [
   { href: "/applications", label: "Applications" },
@@ -86,8 +87,8 @@ function MobileMenu({
 }
 
 export default function NavBar() {
-  // Always null on first render (matches SSR), then read localStorage after mount
   const [user, setUser] = useState<User | null>(null)
+  const [mounted, setMounted] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -95,9 +96,9 @@ export default function NavBar() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem("pilotphd_user")
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored) setUser(JSON.parse(stored) as User)
     } catch {}
+    setMounted(true)
   }, [])
 
   // Listen for auth changes from other tabs or the login page
@@ -118,6 +119,7 @@ export default function NavBar() {
     }).catch(() => {})
     localStorage.removeItem("pilotphd_token")
     localStorage.removeItem("pilotphd_user")
+    clearAuthCookie()
     setUser(null)
     router.push("/")
   }
@@ -159,9 +161,9 @@ export default function NavBar() {
             </nav>
           )}
 
-          {/* Right side */}
+          {/* Right side — hidden until mounted to prevent SSR/hydration flash */}
           <div className="flex items-center gap-2">
-            {user ? (
+            {mounted && user ? (
               <>
                 <span className="hidden md:block text-xs text-gray-400">{user.name}</span>
                 <button
@@ -171,7 +173,7 @@ export default function NavBar() {
                   Sign out
                 </button>
               </>
-            ) : (
+            ) : mounted ? (
               <>
                 <Link
                   href="/login"
@@ -186,6 +188,8 @@ export default function NavBar() {
                   Sign up
                 </Link>
               </>
+            ) : (
+              <div className="hidden md:block w-24 h-6" /> /* placeholder to hold layout */
             )}
 
             {/* Mobile hamburger */}

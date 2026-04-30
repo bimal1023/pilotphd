@@ -39,6 +39,7 @@ export default function Applications() {
   const [error, setError] = useState("")
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<Partial<Application>>({})
+  const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null)
 
   async function fetchApplications() {
     try {
@@ -74,7 +75,7 @@ export default function Applications() {
       if (!res.ok) throw new Error("Could not add application.")
       setUniversity(""); setProgram(""); setDeadline(""); setResearchInterest("")
       setShowForm(false)
-      fetchApplications()
+      await fetchApplications()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
     } finally {
@@ -110,29 +111,37 @@ export default function Applications() {
       })
       if (!res.ok) throw new Error("Could not update application.")
       setEditingId(null)
-      fetchApplications()
+      await fetchApplications()
     } catch {
       setError("Could not update application. Please try again.")
     }
   }
 
-  async function handleStatusUpdate(id: number, status: string) {
+  async function handleStatusUpdate(id: number, newStatus: string, prevStatus: string) {
+    setUpdatingStatusId(id)
+    setError("")
     try {
-      await fetchWithTimeout(`${API_URL}/api/applications/${id}`, {
+      const res = await fetchWithTimeout(`${API_URL}/api/applications/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: newStatus }),
       })
-      fetchApplications()
+      if (!res.ok) throw new Error()
+      await fetchApplications()
     } catch {
+      // Revert the optimistic UI by re-fetching (fetchApplications restores server state)
+      await fetchApplications()
       setError("Could not update status. Please try again.")
+    } finally {
+      setUpdatingStatusId(null)
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: number, university: string) {
+    if (!window.confirm(`Delete the application for ${university}? This cannot be undone.`)) return
     try {
       await fetchWithTimeout(`${API_URL}/api/applications/${id}`, { method: "DELETE" })
-      fetchApplications()
+      await fetchApplications()
     } catch {
       setError("Could not delete application. Please try again.")
     }
@@ -273,18 +282,23 @@ export default function Applications() {
                     </span>
                     <select
                       value={app.status}
-                      onChange={(e) => handleStatusUpdate(app.id, e.target.value)}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+                      disabled={updatingStatusId === app.id}
+                      onChange={(e) => handleStatusUpdate(app.id, e.target.value, app.status)}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 disabled:opacity-50 disabled:cursor-wait"
                     >
                       {["planning", "applied", "waiting", "accepted", "rejected", "withdrawn"].map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
-                    <button onClick={() => startEdit(app)}
+                    <button
+                      onClick={() => startEdit(app)}
+                      aria-label={`Edit ${app.university}`}
                       className="text-xs text-gray-300 hover:text-blue-400 transition-colors px-1">
                       ✎
                     </button>
-                    <button onClick={() => handleDelete(app.id)}
+                    <button
+                      onClick={() => handleDelete(app.id, app.university)}
+                      aria-label={`Delete ${app.university}`}
                       className="text-xs text-gray-300 hover:text-red-400 transition-colors px-1">
                       ✕
                     </button>

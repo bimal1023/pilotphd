@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { API_URL } from "@/lib/api"
+import { setAuthCookie } from "@/lib/authCookie"
 import { Suspense } from "react"
 
 function VerifyEmailContent() {
@@ -32,6 +33,7 @@ function VerifyEmailContent() {
         if (!res.ok) throw new Error(data.detail || "Verification failed.")
         localStorage.setItem("pilotphd_token", data.token)
         localStorage.setItem("pilotphd_user", JSON.stringify(data.user))
+        setAuthCookie()
         window.dispatchEvent(new StorageEvent("storage", { key: "pilotphd_user", newValue: JSON.stringify(data.user) }))
         setStatus("success")
         setTimeout(() => router.push("/dashboard"), 2000)
@@ -110,9 +112,15 @@ function VerifyEmailContent() {
   )
 }
 
+const Spinner = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-[#fafafa]">
+    <div className="w-8 h-8 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+  </div>
+)
+
 export default function VerifyEmailPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<Spinner />}>
       <VerifyEmailContent />
     </Suspense>
   )

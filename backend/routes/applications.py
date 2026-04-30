@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from ..auth import get_current_user
 from ..database import get_db
@@ -24,10 +24,19 @@ def create_application(
 
 @router.get("/", response_model=list[ApplicationResponse])
 def get_applications(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Application).filter(Application.user_id == current_user.id).all()
+    return (
+        db.query(Application)
+        .filter(Application.user_id == current_user.id)
+        .order_by(Application.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 @router.get("/{app_id}", response_model=ApplicationResponse)
