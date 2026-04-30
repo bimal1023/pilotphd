@@ -73,9 +73,10 @@ export default function Applications() {
         }),
       })
       if (!res.ok) throw new Error("Could not add application.")
+      const created: Application = await res.json()
+      setApplications((prev) => [created, ...prev])
       setUniversity(""); setProgram(""); setDeadline(""); setResearchInterest("")
       setShowForm(false)
-      await fetchApplications()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
     } finally {
@@ -110,8 +111,9 @@ export default function Applications() {
         }),
       })
       if (!res.ok) throw new Error("Could not update application.")
+      const updated: Application = await res.json()
+      setApplications((prev) => prev.map((a) => (a.id === editingId ? updated : a)))
       setEditingId(null)
-      await fetchApplications()
     } catch {
       setError("Could not update application. Please try again.")
     }
@@ -120,6 +122,8 @@ export default function Applications() {
   async function handleStatusUpdate(id: number, newStatus: string, prevStatus: string) {
     setUpdatingStatusId(id)
     setError("")
+    // Optimistic update
+    setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a)))
     try {
       const res = await fetchWithTimeout(`${API_URL}/api/applications/${id}`, {
         method: "PUT",
@@ -127,10 +131,9 @@ export default function Applications() {
         body: JSON.stringify({ status: newStatus }),
       })
       if (!res.ok) throw new Error()
-      await fetchApplications()
     } catch {
-      // Revert the optimistic UI by re-fetching (fetchApplications restores server state)
-      await fetchApplications()
+      // Revert to previous status on failure
+      setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status: prevStatus } : a)))
       setError("Could not update status. Please try again.")
     } finally {
       setUpdatingStatusId(null)
@@ -139,10 +142,13 @@ export default function Applications() {
 
   async function handleDelete(id: number, university: string) {
     if (!window.confirm(`Delete the application for ${university}? This cannot be undone.`)) return
+    // Optimistic remove
+    setApplications((prev) => prev.filter((a) => a.id !== id))
     try {
       await fetchWithTimeout(`${API_URL}/api/applications/${id}`, { method: "DELETE" })
-      await fetchApplications()
     } catch {
+      // Restore the deleted item by re-fetching
+      await fetchApplications()
       setError("Could not delete application. Please try again.")
     }
   }
