@@ -7,6 +7,7 @@ import { clearAuthCookie } from "@/lib/authCookie"
 
 const navLinks = [
   { href: "/applications", label: "Applications" },
+  { href: "/professors", label: "Professors" },
   { href: "/email", label: "Email" },
   { href: "/statement", label: "Statement" },
   { href: "/fellowships", label: "Fellowships" },

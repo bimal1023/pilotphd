@@ -18,6 +18,18 @@ const statusConfig: Record<string, { color: string; dot: string }> = {
 
 const quickActions = [
   {
+    href: "/professors",
+    label: "Find Professors",
+    description: "Discover researchers whose work aligns with yours",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="6" cy="5" r="2.5" stroke="#2563eb" strokeWidth="1.2"/>
+        <path d="M1.5 13.5c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="#2563eb" strokeWidth="1.2" strokeLinecap="round"/>
+        <path d="M11 2.5a2 2 0 010 4M14 13c0-1.8-1.2-3-3-3.5" stroke="#2563eb" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
     href: "/email",
     label: "Draft Email",
     description: "Write a personalized cold email to a professor",

@@ -8,7 +8,7 @@ from sqlalchemy import text
 from .config import settings
 from .database import init_db, get_db
 from .limiter import limiter
-from .routes import applications, agents, auth
+from .routes import applications, agents, auth, professors
 
 
 @asynccontextmanager
@@ -49,6 +49,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(applications.router, prefix="/api/applications", tags=["applications"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
+app.include_router(professors.router, prefix="/api/professors", tags=["professors"])
 
 
 @app.get("/health")

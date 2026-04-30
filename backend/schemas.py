@@ -91,3 +91,25 @@ class FellowshipRequest(BaseModel):
 
 class StatementRequest(BaseModel):
     personal_statement: str
+
+
+# ── Professor finder schemas ───────────────────────────────────────────────────
+
+class ProfessorSearchRequest(BaseModel):
+    research_interest: str = Field(..., min_length=3, max_length=300)
+    universities: list[str] = Field(..., min_length=1, max_length=10)
+    profile: str = Field(..., min_length=10, max_length=1000)
+
+
+class ProfessorResult(BaseModel):
+    name: str
+    university: str
+    fit_score: int
+    why: str
+    email_talking_point: str
+    email: Optional[str]
+    email_source: Optional[str]
+    top_papers: list[str]
+    citation_count: int
+    h_index: Optional[int]
+    openalex_url: str
