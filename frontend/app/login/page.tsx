@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { API_URL } from "@/lib/api"
@@ -19,8 +19,12 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const router = useRouter()
+  const didCheck = useRef(false)
 
   useEffect(() => {
+    if (didCheck.current) return
+    didCheck.current = true
+
     const token = localStorage.getItem("pilotphd_token")
     if (token && hasAuthCookie()) {
       router.replace("/dashboard")
@@ -30,7 +34,7 @@ export default function LoginPage() {
       localStorage.removeItem("pilotphd_user")
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run once on mount only — router reference changes on re-renders in Next.js App Router
+  }, [])
 
   function setField(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>

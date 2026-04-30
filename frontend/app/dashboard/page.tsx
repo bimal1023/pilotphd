@@ -2,7 +2,7 @@
 
 import { API_URL } from "@/lib/api"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 import { fetchApplicationsCached } from "@/lib/applicationsCache"
 
@@ -78,8 +78,12 @@ const quickActions = [
 export default function Dashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [userName, setUserName] = useState("")
+  const didLoad = useRef(false)
 
   useEffect(() => {
+    if (didLoad.current) return
+    didLoad.current = true
+
     async function load() {
       const stored = localStorage.getItem("pilotphd_user")
       if (stored) {

@@ -1,6 +1,6 @@
 "use client"
 import { API_URL } from "@/lib/api"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 import { fetchApplicationsCached, invalidateApplicationsCache } from "@/lib/applicationsCache"
 
@@ -58,8 +58,13 @@ export default function Applications() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchApplications() }, [])
+  const didLoad = useRef(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (didLoad.current) return
+    didLoad.current = true
+    fetchApplications()
+  }, [])
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
