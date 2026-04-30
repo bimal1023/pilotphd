@@ -29,7 +29,8 @@ export default function LoginPage() {
       localStorage.removeItem("pilotphd_token")
       localStorage.removeItem("pilotphd_user")
     }
-  }, [router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run once on mount only — router reference changes on re-renders in Next.js App Router
 
   function setField(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>

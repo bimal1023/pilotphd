@@ -2,6 +2,7 @@
 import { API_URL } from "@/lib/api"
 import { useState, useEffect } from "react"
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
+import { fetchApplicationsCached, invalidateApplicationsCache } from "@/lib/applicationsCache"
 
 type Application = {
   id: number
@@ -43,10 +44,13 @@ export default function Applications() {
 
   async function fetchApplications() {
     try {
-      const res = await fetchWithTimeout(`${API_URL}/api/applications/`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || "Could not load applications.")
-      setApplications(Array.isArray(data) ? data : [])
+      const data = await fetchApplicationsCached(async () => {
+        const res = await fetchWithTimeout(`${API_URL}/api/applications/`)
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.detail || "Could not load applications.")
+        return Array.isArray(json) ? json : []
+      })
+      setApplications(data)
     } catch {
       setError("Could not load applications. Please refresh the page.")
     } finally {
@@ -74,6 +78,7 @@ export default function Applications() {
       })
       if (!res.ok) throw new Error("Could not add application.")
       const created: Application = await res.json()
+      invalidateApplicationsCache()
       setApplications((prev) => [created, ...prev])
       setUniversity(""); setProgram(""); setDeadline(""); setResearchInterest("")
       setShowForm(false)
@@ -112,6 +117,7 @@ export default function Applications() {
       })
       if (!res.ok) throw new Error("Could not update application.")
       const updated: Application = await res.json()
+      invalidateApplicationsCache()
       setApplications((prev) => prev.map((a) => (a.id === editingId ? updated : a)))
       setEditingId(null)
     } catch {
@@ -146,8 +152,10 @@ export default function Applications() {
     setApplications((prev) => prev.filter((a) => a.id !== id))
     try {
       await fetchWithTimeout(`${API_URL}/api/applications/${id}`, { method: "DELETE" })
+      invalidateApplicationsCache()
     } catch {
       // Restore the deleted item by re-fetching
+      invalidateApplicationsCache()
       await fetchApplications()
       setError("Could not delete application. Please try again.")
     }

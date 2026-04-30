@@ -4,6 +4,7 @@ import { API_URL } from "@/lib/api"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
+import { fetchApplicationsCached } from "@/lib/applicationsCache"
 
 type Application = { id: number; university: string; program: string; status: string }
 
@@ -85,9 +86,12 @@ export default function Dashboard() {
         try { setUserName(JSON.parse(stored).name?.split(" ")[0] ?? "") } catch {}
       }
       try {
-        const res = await fetchWithTimeout(`${API_URL}/api/applications/`)
-        const data = await res.json()
-        if (Array.isArray(data)) setApplications(data)
+        const data = await fetchApplicationsCached(async () => {
+          const res = await fetchWithTimeout(`${API_URL}/api/applications/`)
+          const json = await res.json()
+          return Array.isArray(json) ? json : []
+        })
+        setApplications(data)
       } catch {}
     }
     load()
